@@ -1,0 +1,442 @@
+---
+title: "Preliminary Results - DTown Master's Project - 15 Nov 2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#setwd("C:/Users/ardra/Desktop/Master's Project R Data")
+mydata2=read.csv("data15nov.csv")
+#install.packages("lmerTest")
+```
+
+
+##Linear mixed effects model (LME) - Percentage of Total Leaves with Damage for Kale (K) & Collard Greens (CG)
+```{r}
+library(lme4)
+library(lmerTest)
+m=lmer(pct_ofleaves_dam~treatment+days+crop+(1|uniqname), data=mydata2) 
+summary(m)
+```
+
+##LME - Percentage of Total Leaves with Damage for Kale (K)
+```{r}
+m_K_only=lmer(pct_ofleaves_dam~treatment+days+(1|uniqname), data=mydata2[mydata2$crop=="K",]) 
+summary(m_K_only)
+```
+
+##LME - Percentage of Total Leaves with Damage for Collard Greens (CG)
+```{r}
+m_CG_only=lmer(pct_ofleaves_dam~treatment+days+(1|uniqname), data=mydata2[mydata2$crop=="CG",])
+summary(m_CG_only)
+```
+
+##LME - Percentage of Total Leaves with Damage for K & CG + interaction term of treatment type and crop
+```{r}
+m_with_interact=lmer(pct_ofleaves_dam~treatment+days+crop+treatment*crop+(1|uniqname), data=mydata2)
+summary(m_with_interact)
+```
+
+##LME - Percentage of Total Leaves with Damage for Kale - including residual effects for individual and subplot
+```{r}
+m_with_subplot=lmer(pct_ofleaves_dam~treatment+days+(1|uniqname)+(1|subplot), 
+                    data=mydata2[mydata2$crop=="K",])
+summary(m_with_subplot)
+```
+
+
+##LME - Percentage Leaf Loss for K & C
+```{r}
+library(lme4)
+m_loss=lmer(avg_loss~treatment+days+crop+(1|uniqname), data=mydata2) 
+summary(m_loss)
+```
+
+##LME - Percentage Leaf Loss for K
+```{r}
+m_K_only=lmer(avg_loss~treatment+days+(1|uniqname), data=mydata2[mydata2$crop=="K",]) 
+summary(m_K_only)
+```
+
+##LME - Percentage Leaf loss for CG
+```{r}
+m_CG_only=lmer(avg_loss~treatment+days+(1|uniqname), data=mydata2[mydata2$crop=="CG",])
+summary(m_CG_only)
+```
+
+#LME - Percentage Leaf loss for K & C + interaction term treatment type and crop
+```{r}
+m_with_interact=lmer(avg_loss~treatment+days+crop+treatment*crop+(1|uniqname), data=mydata2)
+summary(m_with_interact)
+```
+
+##LME - Percentage Leaf loss - K & CG - including residual effects for individual and subplot
+```{r}
+m=lmer(avg_loss~treatment+days+(1|uniqname)+(1|subplot), data=mydata2)
+summary(m)
+```
+
+
+
+##Histogram - percentage of total leaves with damage K & CG
+```{r}
+hist(mydata2$pct_ofleaves_dam)
+```
+
+##Histogram - Percentage Leaf Loss for K & CG
+```{r}
+hist(mydata2$avg_loss)
+```
+
+##Histogram - aphids on leaf1 for K & CG
+```{r}
+#make this average/total aphids
+hist(mydata2$aphid_leaf1)
+```
+
+##Histogram - caterpillars on leaf 1 for K and CG
+```{r}
+#make this average/total cats
+hist(mydata2$cat_leaf1)
+```
+
+
+
+##Aphids - Generalized Estimation Equations - Poisson - glmer for K & CG
+Poisson GEE method. Need to understand model and interpretation. 
+Tried these methods due to convergence issues that arose with glmer, possibly due to zero inflation.
+```{r}
+#install.packages("geepack")
+library(geepack)
+geepack_model<-geeglm(aphid_leaf1~treatment+crop, id=plant, family=poisson, data=mydata2)
+summary(geepack_model)
+```
+
+
+
+##Aphids - Zero-inflated negative binomial generalized mixed model method K & CG
+Accounts for zero inflation. The 0 inflation model below tells us what determines if the response variable is 0. The conditional model excludes data points that are always 0, and shows results for the rest. Results imply Kale less likely to be 0.
+```{r}
+install.packages("glmmTMB")
+library(glmmTMB)
+glmmtmb_model<-glmmTMB(aphid_leaf1~treatment+crop+(1|uniqname), 
+                       ziformula=~treatment+crop, 
+                       family=nbinom2, data=mydata2)
+summary(glmmtmb_model)
+```
+
+
+##Caterpillars - Generalized Estimation Equations - Poisson - glmer for K & CG
+Poisson GEE method. Need to check interpretation. 
+Tried these methods due to convergence issues that arose with glmer, possibly due to zero inflation.
+```{r}
+#install.packages(geepack)
+library(geepack)
+geepack_model<-geeglm(cat_leaf1~treatment+crop, id=plant, family=poisson, data=mydata2)
+summary(geepack_model)
+```
+
+
+##Caterpillars - Zero-inflated negative binomial generalized mixed model method K & CG
+Accounts for zero inflation. The 0 inflation model below tells us what determines if the response variable is 0. The conditional model excludes data points that are always 0, and shows results for the rest.
+```{r}
+glmmtmb_model<-glmmTMB(cat_leaf1~treatment+crop+(1|uniqname), 
+                       ziformula=~treatment+crop, 
+                       family=nbinom2, data=mydata2)
+summary(glmmtmb_model)
+```
+
+##Collards - Control - leaf loss raw data
+```{r}
+boxplot(avg_loss~week, main="Collards - Control - leaf loss raw data", data=subset(mydata2, crop=="CG" & treatment=="Control"))
+```
+
+##Collards - Control - leaf damage raw data
+```{r}
+boxplot(pct_ofleaves_dam~week, main="Collards - Control - leaf damage raw data", data=subset(mydata2, crop=="CG" & treatment=="Control"))
+```
+
+##Collards - Control - aphids raw data
+```{r}
+boxplot(aphid_leaf1~week, main="Collards - Control - aphids raw data", data=subset(mydata2, crop=="CG" & treatment=="Control"))
+```
+
+##Collards - Control - caterpillars raw data
+```{r}
+boxplot(cat_leaf1~week, main="Collards - Control - caterpillars raw data", data=subset(mydata2, crop=="CG" & treatment=="Control"))
+```
+
+##Collards - Neem - leaf loss raw data
+```{r}
+boxplot(avg_loss~week, main="Collards - Neem - leaf loss raw data", data=subset(mydata2, crop=="CG" & treatment=="Neem"))
+```
+
+##Collards - Neem - leaf damage raw data
+```{r}
+boxplot(pct_ofleaves_dam~week, main="Collards - Neem - leaf damage raw data", data=subset(mydata2, crop=="CG" & treatment=="Neem"))
+```
+
+##Collards - Neem - aphids raw data
+```{r}
+boxplot(aphid_leaf1~week, main="Collards - Neem - aphids raw data", data=subset(mydata2, crop=="CG" & treatment=="Neem"))
+```
+
+##Collards - Neem - caterpillars raw data
+```{r}
+boxplot(cat_leaf1~week, main="Collards - Neem - caterpillars raw data", data=subset(mydata2, crop=="CG" & treatment=="Neem"))
+```
+
+##Collards - Net - leaf loss raw data
+```{r}
+boxplot(avg_loss~week, main="Collards - Net - leaf loss raw data", data=subset(mydata2, crop=="CG" & treatment=="Net"))
+```
+
+##Collards - Net - leaf damage raw data
+```{r}
+boxplot(pct_ofleaves_dam~week, main="Collards - Net - leaf damage raw data", data=subset(mydata2, crop=="CG" & treatment=="Net"))
+```
+
+##Collards - Net - aphids raw data
+```{r}
+boxplot(aphid_leaf1~week, main="Collards - Net - aphids raw data", data=subset(mydata2, crop=="CG" & treatment=="Net"))
+```
+
+##Collards - Net - caterpillars raw data
+```{r}
+boxplot(cat_leaf1~week, main="Collards - Net - caterpillars raw data", data=subset(mydata2, crop=="CG" & treatment=="Net"))
+```
+
+##Kale - Control - leaf loss raw data
+```{r}
+boxplot(avg_loss~week, main="Kale - Control - leaf loss raw data", data=subset(mydata2, crop=="K" & treatment=="Control"))
+```
+
+##Kale - Control - leaf damage raw data
+```{r}
+boxplot(pct_ofleaves_dam~week, main="Kale - Control - leaf damage raw data", data=subset(mydata2, crop=="K" & treatment=="Control"))
+```
+
+##Kale - Control - aphids raw data
+```{r}
+boxplot(aphid_leaf1~week, main="Kale - Control - aphids raw data", data=subset(mydata2, crop=="K" & treatment=="Control"))
+```
+
+##Kale - Control - caterpillars raw data
+```{r}
+boxplot(cat_leaf1~week, main="Kale - Control - caterpillars raw data", data=subset(mydata2, crop=="K" & treatment=="Control"))
+```
+
+##Kale - Neem - leaf loss raw data
+```{r}
+boxplot(avg_loss~week, main="Kale - Neem - leaf loss raw data", data=subset(mydata2, crop=="K" & treatment=="Neem"))
+```
+
+##Kale - Neem - leaf damage raw data
+```{r}
+boxplot(pct_ofleaves_dam~week, main="Kale - Neem - leaf damage raw data", data=subset(mydata2, crop=="K" & treatment=="Neem"))
+```
+
+##Kale - Neem - aphids raw data
+```{r}
+boxplot(aphid_leaf1~week, main="Kale - Neem - aphids raw data", data=subset(mydata2, crop=="K" & treatment=="Neem"))
+```
+
+##Kale - Neem - caterpillars raw data
+```{r}
+boxplot(cat_leaf1~week, main="Kale - Neem - caterpillars raw data", data=subset(mydata2, crop=="K" & treatment=="Neem"))
+```
+
+##Kale - Net - leaf loss raw data
+```{r}
+boxplot(avg_loss~week, main="Kale - Net - leaf loss raw data", data=subset(mydata2, crop=="K" & treatment=="Net"))
+```
+
+##Kale - Net - leaf damage raw data
+```{r}
+boxplot(pct_ofleaves_dam~week, main="Kale - Net - leaf damage raw data", data=subset(mydata2, crop=="K" & treatment=="Net"))
+```
+
+##Kale - Net - aphids raw data
+```{r}
+boxplot(aphid_leaf1~week, main="Kale - Net - aphids raw data", data=subset(mydata2, crop=="K" & treatment=="Net"))
+```
+
+##Kale - Net - caterpillars raw data
+```{r}
+boxplot(cat_leaf1~week, main="Kale - Net - caterpillars raw data", data=subset(mydata2, crop=="K" & treatment=="Net"))
+```
+
+
+##Kale - Boxplots for overall percentage of leaves damaged on plants and average leaf loss
+```{r}
+# Visualize kale subset
+boxplot(pct_ofleaves_dam ~ treatment, main="Kale - Leaves Damaged - Cumulative", data=subset(mydata2, crop=="K"))
+boxplot(avg_loss ~ treatment, main="Kale - Leaf Loss - Cumulative", data=subset(mydata2, crop=="K"))
+
+
+```
+
+##Collards - Boxplots for overall percentage of leaves damaged on plants and average leaf loss
+```{r}
+# Visualize collard greens subset
+boxplot(pct_ofleaves_dam ~ treatment, main="Collards - Leaves Damaged - Cumulative", data=subset(mydata2, crop=="CG"))
+boxplot(avg_loss~treatment,  main="Collards - Leaf Loss - Cumulative", data=subset(mydata2, crop=="CG"))
+```
+
+##Kale - Boxplots for overall aphids and caterpillars
+```{r}
+# Visualize kale subset
+boxplot(aphid_leaf1 ~ treatment, main="Kale - Aphids - Cumulative", data=subset(mydata2, crop=="K"))
+boxplot(cat_leaf1 ~ treatment, main="Kale - Caterpillars - Cumulative", data=subset(mydata2, crop=="K"))
+
+
+```
+
+##Collards - Boxplots for overall aphids and caterpillars
+```{r}
+# Visualize collard greens subset
+boxplot(aphid_leaf1 ~ treatment, main="Collards - Aphids - Cumulative", data=subset(mydata2, crop=="CG"))
+boxplot(cat_leaf1~treatment,  main="Collards - Caterpillars - Cumulative", data=subset(mydata2, crop=="CG"))
+```
+
+##Pest data - Creating totalled columns
+```{r}
+#install.packages("tidyverse")
+library(tidyverse)
+#mydata2 %>% as_tibble() %>% mutate(
+#  aphid_tot = aphid_leaf1 + aphid_leaf2)
+#mutate(mydata2$aphid_tot = mydata2$aphid_leaf1 + mydata2$aphid_leaf2)
+head(mydata2)
+
+```
+
+
+##Averages and Std Errors
+```{r}
+byobj<-by(data=mydata2, INDICES = mydata2$week, FUN = function(x) {
+  data.frame(week=x$week[1], 
+             mean_pct_leaves_dam=mean(x$pct_ofleaves_dam),
+             se_mean_pct_leaves_dam=sqrt(var(x$pct_ofleaves_dam)/length(x$pct_ofleaves_dam)),  
+             mean_avg_loss=mean(x$avg_loss),
+             se_mean_avg_loss=sqrt(var(x$avg_loss)/length(x$avg_loss)), 
+
+             mean_aphid_leaf1=mean(x$aphid_leaf1),
+             se_mean_aphid_leaf1=sqrt(var(x$aphid_leaf1)/length(x$aphid_leaf1)), 
+
+             mean_cat_leaf1=mean(x$cat_leaf1),
+             se_mean_cat_leaf1=sqrt(var(x$cat_leaf1)/length(x$cat_leaf1))
+            
+  )})
+output_table<-do.call(rbind, byobj)
+output_table
+```
+
+```{r}
+byobj<-by(data=mydata2, INDICES = mydata2$week, FUN = function(x) {
+  data.frame(week=x$week[1], 
+             mean_pct_leaves_dam=mean(x$pct_ofleaves_dam),
+             se_mean_pct_leaves_dam=sqrt(var(x$pct_ofleaves_dam)/length(x$pct_ofleaves_dam)),  
+             mean_avg_loss=mean(x$avg_loss),
+             se_mean_avg_loss=sqrt(var(x$avg_loss)/length(x$avg_loss)), 
+
+             mean_aphid_leaf1=mean(x$aphid_leaf1),
+             se_mean_aphid_leaf1=sqrt(var(x$aphid_leaf1)/length(x$aphid_leaf1)), 
+
+             mean_cat_leaf1=mean(x$cat_leaf1),
+             se_mean_cat_leaf1=sqrt(var(x$cat_leaf1)/length(x$cat_leaf1))
+            
+  )})
+output_table<-do.call(rbind, byobj)
+output_table
+```
+
+Pct leaves damaged - Mean values - crop + week + treatment
+```{r}
+test <- aggregate(pct_ofleaves_dam ~ crop + treatment + week, FUN = mean, data = mydata2)
+head(test)
+```
+
+Pct leaves damaged - Standard deviation - crop + week + treatment
+```{r}
+test2 <- aggregate(pct_ofleaves_dam ~ crop + treatment + week, FUN = sd, data = mydata2)
+head(test2)
+```
+
+
+Saving as CSV to My Documents - Pct leaves damaged - Mean values + Std Dev
+```{r}
+#write.csv(test, '~/pct_leaf_damage_mean.csv')
+#write.csv(test2, '~/pct_leaf_damage_sd.csv')
+```
+
+
+Pct leaf loss - Mean values - crop + week + treatment
+```{r}
+test3 <- aggregate(avg_loss ~ crop + treatment + week, FUN = mean, data = mydata2)
+head(test3)
+```
+
+
+
+Pct leaf loss - Standard deviation - crop + week + treatment
+```{r}
+test4 <- aggregate(avg_loss ~ crop + treatment + week, FUN = sd, data = mydata2)
+head(test4)
+```
+
+Saving as CSV to My Documents - Pct leaf loss - Mean values + Std Dev
+```{r}
+#write.csv(test3, '~/avg_loss_mean.csv')
+#write.csv(test4, '~/avg_loss_sd.csv')
+```
+
+Aphid_leaf1 - Mean values - crop + week + treatment
+```{r}
+test5 <- aggregate(aphid_leaf1 ~ crop + treatment + week, FUN = mean, data = mydata2)
+head(test5)
+```
+
+
+
+Aphid_leaf1 - Standard deviation - crop + week + treatment
+```{r}
+test6 <- aggregate(aphid_leaf1 ~ crop + treatment + week, FUN = sd, data = mydata2)
+head(test6)
+```
+
+Saving as CSV to My Documents - Aphid_leaf1 - Mean values + Std Dev
+```{r}
+#write.csv(test5, '~/aphid_leaf1_mean.csv')
+#write.csv(test6, '~/aphid_leaf1_sd.csv')
+```
+
+Cat_leaf1 - Mean values - crop + week + treatment
+```{r}
+test7 <- aggregate(cat_leaf1 ~ crop + treatment + week, FUN = mean, data = mydata2)
+head(test7)
+```
+
+
+
+Cat_leaf1 - Standard deviation - crop + week + treatment
+```{r}
+test8 <- aggregate(cat_leaf1 ~ crop + treatment + week, FUN = sd, data = mydata2)
+head(test8)
+```
+
+Saving as CSV to My Documents - Cat_leaf1 - Mean values + Std Dev
+```{r}
+#write.csv(test7, '~/cat_leaf1_mean.csv')
+#write.csv(test8, '~/cat_leaf1_sd.csv')
+```
+
+
+Number of data points - Crop + Treatment + Week
+```{r}
+xtabs(~crop + treatment + week, data = mydata2)
+```
