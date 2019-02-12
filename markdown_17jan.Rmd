@@ -24,7 +24,8 @@ m=lmer(pct_ofleaves_dam~treatment+days+crop+(1|uniqname), data=mydata2)
 summary(m)
 ```
 
-#comment, changed again 
+#comment, changed again
+# to see the difference btw staged and unstaged
 
 ##LME - Percentage of Total Leaves with Damage for Kale (K)
 ```{r}
