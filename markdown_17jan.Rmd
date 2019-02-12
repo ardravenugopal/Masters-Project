@@ -24,6 +24,8 @@ m=lmer(pct_ofleaves_dam~treatment+days+crop+(1|uniqname), data=mydata2)
 summary(m)
 ```
 
+#comment 
+
 ##LME - Percentage of Total Leaves with Damage for Kale (K)
 ```{r}
 m_K_only=lmer(pct_ofleaves_dam~treatment+days+(1|uniqname), data=mydata2[mydata2$crop=="K",]) 
